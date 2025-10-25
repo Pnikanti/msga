@@ -1,0 +1,28 @@
+{
+  "name": "msga",
+  "version": "0.0.1",
+  "description": "Ya'll need to tone down with your bitch ass static site generators.",
+  "main": "msga/msga.js",
+  "scripts": {
+    "dev:tailwind": "npx tailwindcss -i ./src/msga/msga.css -o ./dist/src/msga/msga.css --watch",
+    "dev:swc": "npx swc ./src -d ./dist --watch",
+    "dev:static": "npx cpx \"./src/*.{html,css}\" ./dist/src/ --watch",
+    "dev:vite": "npx vite --config ./vite.config.js",
+    "dev": "concurrently -n tailwind,swc,vite,static -c \"gray,blue,magenta,green\" \"npm:dev:tailwind\" \"npm:dev:swc\" \"npm:dev:vite\" \"npm:dev:static\""
+  },
+  "keywords": [],
+  "author": "Patrick Nikanti",
+  "license": "MIT",
+  "dependencies": {
+    "@swc/cli": "^0.7.8",
+    "@swc/core": "^1.13.21",
+    "@tailwindcss/cli": "^4.1.16",
+    "@tailwindcss/postcss": "^4.1.16",
+    "autoprefixer": "^10.4.21",
+    "chokidar": "^4.0.3",
+    "concurrently": "^9.2.1",
+    "serve": "^14.2.5",
+    "tailwindcss": "^4.1.16",
+    "vite": "^7.1.12"
+  }
+}
