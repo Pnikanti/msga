@@ -21,11 +21,11 @@ const userSrc = path.join(cwd, "src");
 
 const msgaLib = `${bin("cpx")} "${path.join(libSrc, "**/*.js")}" ${path.join(distDir, "src/msga")} --watch`;
 const tailwindLib = `${bin("tailwindcss")} -i ${path.join(libSrc, "/msga.css")} -o ${path.join(`${distDir}/src`, "/msga/msga.css")} --watch`;
-const swcApp = `${bin("swc")} ${userSrc} -d ${distDir} --watch`;
+
+const swcApp = `${bin("swc")} ${userSrc} -d ${distDir} --config-file ${path.join(__dirname,'../.swcrc')} --watch`;
 const cpxApp = `${bin("cpx")} "${path.join(userSrc, "*.{html,css}")}" ${distDir}/src --watch`;
 
-// Vite (if you want dev server for app)
-const viteCmd = `${bin("vite")} --config ${path.join(cwd, "vite.config.js")}`;
+const viteCmd = `${bin("vite")} --config ${path.join(__dirname,'../vite.config.js')}`;
 
 const concurrently = bin("concurrently");
 
