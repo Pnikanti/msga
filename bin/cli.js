@@ -14,7 +14,7 @@ if (!fs.existsSync(distDir))
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const bin = (name) => path.join(__dirname, "../node_modules/.bin", name);
+const bin = (name) => `npx ${name}`;
 
 const libSrc = path.join(__dirname, "../src/msga");
 const userSrc = path.join(cwd, "src");
