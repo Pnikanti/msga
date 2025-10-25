@@ -14,13 +14,14 @@ That's the motto for this project, what's the motto with you?
 
 ### Features
 
+- Tailwind out-of-the-box
 - JSX
 - Hydration
 - useState
 
 ### Steps to get this bad boy running
 
-*1. Create app.jsx*
-*2. Slap the following bad boy in app.jsx*
+1. Create app.jsx
+2. Slap the following bad boy in app.jsx
 
-    Some punk ass forgot to put example app.jsx here
+        Some punk ass forgot to put example app.jsx here
