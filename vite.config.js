@@ -1,13 +1,11 @@
 import { defineConfig } from 'vite';
 import path from 'path';
 
-console.log('Vite config loaded!');
-
 export default defineConfig({
-  root: "dist/src",
+  root: path.resolve(process.cwd(), "dist/src"),
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "dist/src")
+      "@": path.resolve(process.cwd(), "dist/src")
     }
   },
   base: "./",
