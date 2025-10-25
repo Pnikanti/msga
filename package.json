@@ -1,8 +1,12 @@
 {
   "name": "msga",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Ya'll need to tone down with your bitch ass static site generators.",
-  "main": "msga/msga.js",
+  "main": "src/msga/msga.js",
+  "type": "module",
+  "bin": {
+    "msga": "bin/cli.js"
+  },
   "scripts": {
     "dev:tailwind": "npx tailwindcss -i ./src/msga/msga.css -o ./dist/src/msga/msga.css --watch",
     "dev:swc": "npx swc ./src -d ./dist --watch",
@@ -21,6 +25,7 @@
     "autoprefixer": "^10.4.21",
     "chokidar": "^4.0.3",
     "concurrently": "^9.2.1",
+    "cpx": "^1.5.0",
     "serve": "^14.2.5",
     "tailwindcss": "^4.1.16",
     "vite": "^7.1.12"
