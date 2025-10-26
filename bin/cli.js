@@ -24,7 +24,7 @@ const concurrently = bin("concurrently");
 const msgaLib = `${bin("cpx")} "${path.join(libSrc, "**/*.js")}" ${path.join(distDir, "src/msga")} --watch`;
 const tailwindLib = `${bin("tailwindcss")} -i ${path.join(libSrc, "msga.css")} -o ${path.join(distDir, "src/msga/msga.css")} --config "${path.join(__dirname, '../tailwind.config.js')}" --watch`;
 
-const swcApp = `${bin("swc")} "${path.join(userSrc, "*.jsx")}" "${path.join(userSrc, "**/*.jsx")}" -d "${distDir}" --config-file "${path.join(__dirname,'../.swcrc')}" --watch`;c
+const swcApp = `${bin("swc")} "${path.join(userSrc, "*.jsx")}" "${path.join(userSrc, "**/*.jsx")}" -d "${distDir}" --config-file "${path.join(__dirname,'../.swcrc')}" --watch`;
 
 const cpxHtmlCss = `${bin("cpx")} "${path.join(userSrc, "*.{html,css}")}" "${distDir}/src" --watch`;
 const cpxAssets = `${bin("cpx")} "${path.join(userSrc, "assets/**/*")}" "${distDir}/src/assets" --watch`;
