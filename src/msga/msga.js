@@ -98,7 +98,6 @@ export function createApp(AppComponent) {
 				Check for useState or useEffect updating state unconditionally.`
 				);
 			}
-			console.log("Rerender..");
 			component.stateIndex = 0;
 			component.effectIndex = 0;
 			STATE_MAP.currentComponent = component;
@@ -106,7 +105,6 @@ export function createApp(AppComponent) {
 			container.innerHTML = "";
 			container.appendChild(AppComponent());
 
-			// Run effects after DOM is updated
 			queueMicrotask(() => {
 				component.rerenderCount = 0;
 				runEffects(component)
@@ -125,7 +123,6 @@ export function createApp(AppComponent) {
 		container.appendChild(AppComponent());
 		document.body.appendChild(container);
 
-		// Run initial effects
 		queueMicrotask(() => runEffects(component));
 	};
 
@@ -144,7 +141,6 @@ export function useState(initialValue) {
 	let value = comp.states[idx];
 
 	const setValue = (newValue) => {
-		console.log({newValue})
 		value = newValue;
 		comp.states[idx] = newValue;
 		comp.rerender();
@@ -165,19 +161,16 @@ export function useEffect(callback, deps) {
 	const prev = comp.effects[idx];
 	let changed = true;
 
-	// Compare deps if available
 	if (prev) {
-		if (!deps) changed = true;          // no deps → run every time
+		if (!deps) changed = true;
 		else changed = deps.some((d, i) => d !== prev.deps?.[i]);
 	}
 
-	// Always store callback + deps
 	comp.effects[idx] = { callback, deps, cleanup: prev?.cleanup };
 
 	comp.effectIndex = idx + 1;
 
 	if (!prev || changed) {
-		// Mark effect to run after render
 		comp.effects[idx].run = true;
 	}
 }
@@ -188,13 +181,12 @@ function runEffects(comp) {
 	comp.effects.forEach((eff) => {
 		if (!eff.run) return;
 
-		// cleanup previous effect
 		if (eff.cleanup) eff.cleanup();
 
 		const result = eff.callback();
 		if (typeof result === "function") eff.cleanup = result;
 
-		eff.run = false; // mark as done
+		eff.run = false;
 	});
 }
 
