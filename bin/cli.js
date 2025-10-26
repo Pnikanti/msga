@@ -22,7 +22,7 @@ const userSrc = path.join(cwd, "src");
 const msgaLib = `${bin("cpx")} "${path.join(libSrc, "**/*.js")}" ${path.join(distDir, "src/msga")} --watch`;
 const tailwindLib = `${bin("tailwindcss")} -i ${path.join(libSrc, "/msga.css")} -o ${path.join(`${distDir}/src`, "/msga/msga.css")} --watch`;
 
-const swcApp = `${bin("swc")} "${path.join(userSrc, "*.jsx")}" "${path.join(userSrc, "**/*.jsx")}" -d "${path.join(distDir, "src")}" --config-file "${path.join(__dirname,'../.swcrc')}" --watch`;
+const swcApp = `${bin("swc")} "${path.join(userSrc, "*.jsx")}" "${path.join(userSrc, "**/*.jsx")}" -d "${distDir}" --config-file "${path.join(__dirname,'../.swcrc')}" --watch`;
 const cpxApp = `${bin("cpx")} "${path.join(userSrc, "*.{html,css}")}" ${distDir}/src --watch`;
 
 const viteCmd = `${bin("vite")} --config ${path.join(__dirname,'../vite.config.js')}`;
