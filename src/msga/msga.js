@@ -89,25 +89,39 @@ export function createApp(AppComponent) {
 		effects: [],
 		stateIndex: 0,
 		effectIndex: 0,
+		isRendering: false,
 		rerenderCount: 0,
+		lastRenderTimestamp: 0,
 		rerender: () => {
-			component.rerender++;
+			const now = performance.now();
+			
+			if (now - component.lastRenderTimestamp > 1000)
+				component.rerenderCount = 0;
+			
+			component.rerenderCount++;
+			component.lastRenderTimestamp = now;
+
 			if (component.rerenderCount > 50) {
-				throw new Error(
-					`Too many rerenders in component "${AppComponent.name}".
-				Check for useState or useEffect updating state unconditionally.`
-				);
+				const message = `Too many rerenders / setState called during render in "${AppComponent.name}"`;
+				console.error(message);
+				showErrorNotification(message);
+				return;
 			}
+
+			if (component.isRendering)
+				return;
+
 			component.stateIndex = 0;
 			component.effectIndex = 0;
 			STATE_MAP.currentComponent = component;
 
+			component.isRendering = true;   
 			container.innerHTML = "";
 			container.appendChild(AppComponent());
+			component.isRendering = false;   
 
 			queueMicrotask(() => {
-				component.rerenderCount = 0;
-				runEffects(component)
+				runEffects(component);
 			});
 		},
 	};
@@ -131,16 +145,28 @@ export function createApp(AppComponent) {
 
 export function useState(initialValue) {
 	const comp = STATE_MAP.currentComponent;
-	if (!comp) throw new Error("useState must be called inside a component");
+	if (!comp) {
+		const message = "useState must be called inside a component"
+		console.error(message);
+		showErrorNotification(message); 
+	}
 
 	const idx = comp.stateIndex ?? 0;
 
-	if (!comp.states) comp.states = [];
-	if (comp.states[idx] === undefined) comp.states[idx] = initialValue;
+	if (!comp.states)
+		comp.states = [];
+	if (comp.states[idx] === undefined)
+		comp.states[idx] = initialValue;
 
 	let value = comp.states[idx];
 
 	const setValue = (newValue) => {
+		if (comp.isRendering) {
+			const message = "Can't setState during render. Move call to useEffect, event handler or async callback."
+			console.error(message);
+			showErrorNotification(message); 
+		}
+
 		value = newValue;
 		comp.states[idx] = newValue;
 		comp.rerender();
@@ -153,43 +179,94 @@ export function useState(initialValue) {
 
 export function useEffect(callback, deps) {
 	const comp = STATE_MAP.currentComponent;
-	if (!comp) throw new Error("useEffect must be called inside a component");
-
+	if (!comp) {
+		const message = "useEffect must be called inside a component";
+	}
 	const idx = comp.effectIndex ?? 0;
-	if (!comp.effects) comp.effects = [];
+
+	if (!comp.effects)
+		comp.effects = [];
 
 	const prev = comp.effects[idx];
+
 	let changed = true;
 
 	if (prev) {
-		if (!deps) changed = true;
-		else changed = deps.some((d, i) => d !== prev.deps?.[i]);
+		if (!deps)
+			changed = true;
+		else
+			changed = deps.some((d, i) => d !== prev.deps?.[i]);
 	}
 
-	comp.effects[idx] = { callback, deps, cleanup: prev?.cleanup };
-
+	comp.effects[idx] = {
+		callback,
+		deps: deps ?? null,
+		cleanup: prev?.cleanup,
+		run: !prev || changed,
+	}
+	
 	comp.effectIndex = idx + 1;
-
-	if (!prev || changed) {
-		comp.effects[idx].run = true;
-	}
 }
 
+
 function runEffects(comp) {
-	if (!comp.effects) return;
+	if (!comp.effects)
+		return;
 
 	comp.effects.forEach((eff) => {
-		if (!eff.run) return;
+		if (!eff.run)
+			return;
 
-		if (eff.cleanup) eff.cleanup();
+		if (eff.cleanup)
+			eff.cleanup();
 
 		const result = eff.callback();
-		if (typeof result === "function") eff.cleanup = result;
+
+		if (typeof result === "function")
+			eff.cleanup = result;
 
 		eff.run = false;
 	});
 }
 
+function showErrorNotification(message) {
+  let container = document.getElementById("error-overlay");
+
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "error-overlay";
+    Object.assign(container.style, {
+      position: "fixed",
+      top: "10px",
+      left: "50%",
+      transform: "translateX(-50%)",
+      backgroundColor: "rgba(255,0,0,0.9)",
+      color: "white",
+      padding: "12px 20px",
+      borderRadius: "6px",
+      zIndex: 9999,
+      fontFamily: "sans-serif",
+      fontSize: "14px",
+      maxWidth: "90%",
+      boxShadow: "0 0 10px rgba(0,0,0,0.5)",
+    });
+    document.body.appendChild(container);
+  }
+
+  container.textContent = message;
+}
+
+window.addEventListener("error", (event) => {
+    const msg = `Runtime error: ${event.message} at ${event.filename}:${event.lineno}:${event.colno}`;
+    console.error(msg, event.error);
+    showErrorNotification(msg);
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+    const msg = `Unhandled promise rejection: ${event.reason}`;
+    console.error(msg, event.reason);
+    showErrorNotification(msg);
+});
 
 window.createElement = createElement;
 window.Fragment = Fragment;
