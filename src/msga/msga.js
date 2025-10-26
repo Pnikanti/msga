@@ -81,18 +81,37 @@ function createElement(tag, props = {}, ...children) {
 /** @jsx Fragment */
 const Fragment = (props) => props.children;
 
-
 export function createApp(AppComponent) {
 	const container = document.createElement("div");
 
 	const component = {
 		states: [],
+		effects: [],
 		stateIndex: 0,
+		effectIndex: 0,
+		rerenderCount: 0,
 		rerender: () => {
+			component.rerender++;
+			if (component.rerenderCount > 50) {
+				throw new Error(
+					`Too many rerenders in component "${AppComponent.name}".
+				Check for useState or useEffect updating state unconditionally.`
+				);
+			}
+			console.log("Rerender..");
 			component.stateIndex = 0;
+			component.effectIndex = 0;
+			STATE_MAP.currentComponent = component;
+
 			container.innerHTML = "";
 			container.appendChild(AppComponent());
-		}
+
+			// Run effects after DOM is updated
+			queueMicrotask(() => {
+				component.rerenderCount = 0;
+				runEffects(component)
+			});
+		},
 	};
 
 	STATE_MAP.currentComponent = component;
@@ -102,8 +121,12 @@ export function createApp(AppComponent) {
 			requestAnimationFrame(mount);
 			return;
 		}
+
 		container.appendChild(AppComponent());
 		document.body.appendChild(container);
+
+		// Run initial effects
+		queueMicrotask(() => runEffects(component));
 	};
 
 	mount();
@@ -121,6 +144,7 @@ export function useState(initialValue) {
 	let value = comp.states[idx];
 
 	const setValue = (newValue) => {
+		console.log({newValue})
 		value = newValue;
 		comp.states[idx] = newValue;
 		comp.rerender();
@@ -130,6 +154,50 @@ export function useState(initialValue) {
 
 	return [value, setValue];
 }
+
+export function useEffect(callback, deps) {
+	const comp = STATE_MAP.currentComponent;
+	if (!comp) throw new Error("useEffect must be called inside a component");
+
+	const idx = comp.effectIndex ?? 0;
+	if (!comp.effects) comp.effects = [];
+
+	const prev = comp.effects[idx];
+	let changed = true;
+
+	// Compare deps if available
+	if (prev) {
+		if (!deps) changed = true;          // no deps → run every time
+		else changed = deps.some((d, i) => d !== prev.deps?.[i]);
+	}
+
+	// Always store callback + deps
+	comp.effects[idx] = { callback, deps, cleanup: prev?.cleanup };
+
+	comp.effectIndex = idx + 1;
+
+	if (!prev || changed) {
+		// Mark effect to run after render
+		comp.effects[idx].run = true;
+	}
+}
+
+function runEffects(comp) {
+	if (!comp.effects) return;
+
+	comp.effects.forEach((eff) => {
+		if (!eff.run) return;
+
+		// cleanup previous effect
+		if (eff.cleanup) eff.cleanup();
+
+		const result = eff.callback();
+		if (typeof result === "function") eff.cleanup = result;
+
+		eff.run = false; // mark as done
+	});
+}
+
 
 window.createElement = createElement;
 window.Fragment = Fragment;
