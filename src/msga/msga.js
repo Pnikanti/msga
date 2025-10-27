@@ -1,7 +1,18 @@
 /// <reference types="vite/client" />
+
+const IS_LOCAL = ["localhost", "127.0.0.1"].includes(window.location.hostname);
 const STATE_MAP = new WeakMap();
-let popstateInitialized = false;
+
+let POPSTATE_INIT = false;
 let CURRENT_COMPONENT = null;
+
+const errorMessage = (message, any) => {
+	if (!IS_LOCAL)
+		return;
+
+	console.error(message, any);
+	showErrorNotification(message);
+}
 
 export function matchRoute(routePattern, currentPath) {
 	const routeParts = routePattern.split("/").filter(Boolean);
@@ -27,9 +38,9 @@ export function matchRoute(routePattern, currentPath) {
 export function Router({ routes }) {
 	const [path, setPath] = useState(window.location.pathname);
 
-	if (!popstateInitialized) {
+	if (!POPSTATE_INIT) {
 		window.addEventListener("popstate", () => setPath(window.location.pathname));
-		popstateInitialized = true;
+		POPSTATE_INIT = true;
 	}
 
 	let NotFound = null;
@@ -104,13 +115,8 @@ export function createApp(AppComponent) {
 		state.rerenderCount++;
 		state.lastRenderTimestamp = now;
 
-		if (state.rerenderCount > 50) {
-			const message = `Too many rerenders / setState called during render in "${AppComponent.name}"`;
-			console.error(message);
-			showErrorNotification(message);
-			return;
-		}
-
+		if (state.rerenderCount > 50)
+			return errorMessage(`Too many rerenders / setState called during render in "${AppComponent.name}"`);
 
 		if (state.isRendering)
 			return;
@@ -161,11 +167,8 @@ export function createApp(AppComponent) {
 export function useState(initialValue) {
 	const comp = CURRENT_COMPONENT;
 
-	if (!comp) {
-		const message = "useState must be called inside a component"
-		console.error(message);
-		showErrorNotification(message);
-	}
+	if (!comp)
+		errorMessage("useState must be called inside a component");
 
 	const data = STATE_MAP.get(comp);
 	const idx = data.stateIndex ?? 0;
@@ -178,11 +181,8 @@ export function useState(initialValue) {
 	let value = data.states[idx];
 
 	const setValue = (newValue) => {
-		if (data.isRendering) {
-			const message = "Can't setState during render. Move call to useEffect, event handler or async callback."
-			console.error(message);
-			showErrorNotification(message);
-		}
+		if (data.isRendering)
+			errorMessage("Can't setState during render. Move call to useEffect, event handler or async callback.");
 
 		value = newValue;
 		data.states[idx] = newValue;
@@ -197,11 +197,9 @@ export function useState(initialValue) {
 export function useEffect(callback, deps) {
 	const comp = CURRENT_COMPONENT;
 
-	if (!comp) {
-		const message = "useEffect must be called inside a component";
-		console.error(message);
-		showErrorNotification(message);
-	}
+	if (!comp)
+		errorMessage("useEffect must be called inside a component");
+
 	const data = STATE_MAP.get(comp);
 	const idx = data.effectIndex ?? 0;
 
@@ -291,15 +289,11 @@ function showErrorNotification(message) {
 }
 
 window.addEventListener("error", (event) => {
-	const msg = `Runtime error: ${event.message} at ${event.filename}:${event.lineno}:${event.colno}`;
-	console.error(msg, event.error);
-	showErrorNotification(msg);
+	errorMessage(`Runtime error: ${event.message} at ${event.filename}:${event.lineno}:${event.colno}`, event.error);
 });
 
 window.addEventListener("unhandledrejection", (event) => {
-	const msg = `Unhandled promise rejection: ${event.reason}`;
-	console.error(msg, event.reason);
-	showErrorNotification(msg);
+	errorMessage(`Unhandled promise rejection: ${event.reason}`, event.reason);
 });
 
 window.createElement = createElement;
