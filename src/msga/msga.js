@@ -253,24 +253,37 @@ function runEffects(state) {
 function showErrorNotification(message) {
 	let container = document.getElementById("error-overlay");
 
+	const style = {
+		position: "fixed",
+		top: "50%",
+		left: "50%",
+		transform: "translate(-50%, -50%)",
+		backgroundColor: "rgba(210,0,0,0.9)",
+		color: "white",
+		padding: "12px 20px",
+		borderRadius: "6px",
+		zIndex: 9999,
+		boxShadow: "0 0 10px rgba(0,0,0,0.5)",
+		display: "flex",
+		alignItems: "center",
+		justifyContent: "center",
+		textAlign: "center",
+		width: "auto",
+		height: "auto",
+	};
+
+	const smallScreenStyle = {
+		width: "100vw",
+		height: "100vh",
+		borderRadius: 0,
+	};
+
+	const finalStyle = window.innerWidth < 640 ? { ...style, ...smallScreenStyle } : style;
+
 	if (!container) {
 		container = document.createElement("div");
 		container.id = "error-overlay";
-		Object.assign(container.style, {
-			position: "fixed",
-			top: "10px",
-			left: "50%",
-			transform: "translateX(-50%)",
-			backgroundColor: "rgba(255,0,0,0.9)",
-			color: "white",
-			padding: "12px 20px",
-			borderRadius: "6px",
-			zIndex: 9999,
-			fontFamily: "sans-serif",
-			fontSize: "14px",
-			maxWidth: "90%",
-			boxShadow: "0 0 10px rgba(0,0,0,0.5)",
-		});
+		Object.assign(container.style, finalStyle);
 		document.body.appendChild(container);
 	}
 
