@@ -12,13 +12,18 @@ Msga is opinionated exxxtra small React's love child. *I tried your libraries an
 
 That's the motto for this project, what's the motto with you?
 
-### Features
+### Built-in Features
 
-- Opinionated defaults
-- Tailwind out-of-the-box
-- JSX syntax
+- Opinionated
+- Tailwind CSS Out-of-the-Box
+- JSX
 - Hydration
-- useState
+- Router
+- Hooks
+    - useEffect
+    - useState
+- Native Dom
+- Error Handling
 
 ### Steps to get this bad boy running
 
