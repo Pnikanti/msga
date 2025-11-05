@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 
 const cwd = process.cwd(); // user project root
+const normalizePath = (p) => p.replace(/\\/g, "/");
 
 // ensure dist exists in the user project
 const distDir = path.join(cwd, "dist");
@@ -24,10 +25,10 @@ const concurrently = bin("concurrently");
 const msgaLib = `${bin("cpx")} "${path.join(libSrc, "**/*.js")}" ${path.join(distDir, "src/msga")} --watch`;
 const tailwindLib = `${bin("tailwindcss")} -i ${path.join(libSrc, "msga.css")} -o ${path.join(distDir, "src/msga/msga.css")} --config "${path.join(__dirname, '../tailwind.config.js')}" --watch`;
 
-const swcApp = `${bin("swc")} "${path.join(userSrc, "*.jsx")}" "${path.join(userSrc, "**/*.jsx")}" -d "${distDir}" --config-file "${path.join(__dirname,'../.swcrc')}" --watch`;
+const swcApp = `${bin("swc")} compile "${normalizePath(userSrc)}" --out-dir "${normalizePath(distDir)}" --config-file "${normalizePath(path.join(__dirname,'../.swcrc'))}" --watch`;
 
-const cpxHtmlCss = `${bin("cpx")} "${path.join(userSrc, "*.{html,css}")}" "${distDir}/src" --watch`;
-const cpxAssets = `${bin("cpx")} "${path.join(userSrc, "assets/**/*")}" "${distDir}/src/assets" --watch`;
+const cpxHtmlCss = `${bin("cpx")} "${path.join(userSrc, "**/*.{html,css}")}" "${path.join(distDir, "src")}" --watch`;
+const cpxAssets = `${bin("cpx")} "${path.join(userSrc, "assets/**/*")}" "${path.join(distDir, "src/assets")}" --watch`;
 
 const viteCmd = `${bin("vite")} --config ${path.join(__dirname,'../vite.config.js')}`;
 
