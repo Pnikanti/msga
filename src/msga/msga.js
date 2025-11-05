@@ -5,6 +5,10 @@ const STATE_MAP = new WeakMap();
 
 let POPSTATE_INIT = false;
 let CURRENT_COMPONENT = null;
+let APP_COMPONENT = null;
+
+const COMPONENTS = [];
+const container = document.createElement("div");
 
 const errorMessage = (message, any) => {
 	if (!IS_LOCAL)
@@ -63,6 +67,24 @@ export function Router({ routes }) {
 }
 
 export function navigate(to) {
+	const comp = COMPONENTS.filter((c) => c.path === to);
+	console.log(COMPONENTS)
+	let component;
+
+	if (comp.length === 0) {
+		console.log("Creating a new component!")
+		component = { path: to };
+		COMPONENTS.push(component);
+		STATE_MAP.set(component, { states: [], effects: [], stateIndex: 0, effectIndex: 0, isRendering: false, rerenderCount: 0, lastRenderTimestamp: 0 });
+	}
+	else {
+		console.log("Using old component!")
+		component = comp[0];
+	}
+
+	console.log(component);
+	CURRENT_COMPONENT = component;
+
 	window.history.pushState({}, "", to);
 	window.dispatchEvent(new Event("popstate"));
 }
@@ -99,44 +121,44 @@ function createElement(tag, props = {}, ...children) {
 /** @jsx Fragment */
 const Fragment = (props) => props.children;
 
+export function rerender() {
+	console.log("Rendering!");
+	const state = STATE_MAP.get(CURRENT_COMPONENT);
+	const now = performance.now();
+
+	if (now - state.lastRenderTimestamp > 1000)
+		state.rerenderCount = 0;
+
+	state.rerenderCount++;
+	state.lastRenderTimestamp = now;
+
+	if (state.rerenderCount > 50)
+		return errorMessage(`Too many rerenders / setState called during render in "${APP_COMPONENT.name}"`);
+
+	if (state.isRendering)
+		return;
+
+	state.stateIndex = 0;
+	state.effectIndex = 0;
+
+	state.isRendering = true;
+
+	container.innerHTML = "";
+	container.appendChild(APP_COMPONENT());
+
+	state.isRendering = false;
+
+	queueMicrotask(() => runEffects(state));
+};
+
+
 export function createApp(AppComponent) {
-	const container = document.createElement("div");
-	const component = {};
+	const component = { path: window.location.pathname };
+	COMPONENTS.push(component);
+	STATE_MAP.set(component, { states: [], effects: [], stateIndex: 0, effectIndex: 0, isRendering: false, rerenderCount: 0, lastRenderTimestamp: 0 });
 
-	STATE_MAP.set(component, { states: [], effects: [], stateIndex: 0, effectIndex: 0, isRendering: false, rerenderCount: 0, lastRenderTimestamp: 0});
-
-	const rerender = () => {
-		const state = STATE_MAP.get(component);
-		const now = performance.now();
-
-		if (now - state.lastRenderTimestamp > 1000)
-			state.rerenderCount = 0;
-
-		state.rerenderCount++;
-		state.lastRenderTimestamp = now;
-
-		if (state.rerenderCount > 50)
-			return errorMessage(`Too many rerenders / setState called during render in "${AppComponent.name}"`);
-
-		if (state.isRendering)
-			return;
-
-		state.stateIndex = 0;
-		state.effectIndex = 0;
-
-		state.isRendering = true;
-		CURRENT_COMPONENT = component;
-
-		container.innerHTML = "";
-		container.appendChild(AppComponent());
-
-		state.isRendering = false;
-		CURRENT_COMPONENT = null;
-
-		queueMicrotask(() => runEffects(state));
-	};
-
-	component.rerender = rerender;
+	CURRENT_COMPONENT = component;
+	APP_COMPONENT = AppComponent;
 
 	const mount = () => {
 		if (!document.body) {
@@ -144,19 +166,18 @@ export function createApp(AppComponent) {
 			return;
 		}
 
+		console.log("Mounting!")
 		const state = STATE_MAP.get(component);
 
 		state.stateIndex = 0;
-    	state.effectIndex = 0;  
+		state.effectIndex = 0;
 
 		state.isRendering = true;
-		CURRENT_COMPONENT = component;
 
 		container.appendChild(AppComponent());
 		document.body.appendChild(container);
 
 		state.isRendering = false;
-		CURRENT_COMPONENT = null;
 
 		queueMicrotask(() => runEffects(state));
 	};
@@ -171,6 +192,8 @@ export function useState(initialValue) {
 		errorMessage("useState must be called inside a component");
 
 	const data = STATE_MAP.get(comp);
+	console.log(comp);
+	console.log(data);
 	const idx = data.stateIndex ?? 0;
 
 	if (!data.states)
@@ -186,7 +209,7 @@ export function useState(initialValue) {
 
 		value = newValue;
 		data.states[idx] = newValue;
-		comp.rerender();
+		rerender();
 	};
 
 	data.stateIndex = idx + 1;
