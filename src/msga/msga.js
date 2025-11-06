@@ -68,21 +68,17 @@ export function Router({ routes }) {
 
 export function navigate(to) {
 	const comp = COMPONENTS.filter((c) => c.path === to);
-	console.log(COMPONENTS)
 	let component;
 
 	if (comp.length === 0) {
-		console.log("Creating a new component!")
 		component = { path: to };
 		COMPONENTS.push(component);
 		STATE_MAP.set(component, { states: [], effects: [], stateIndex: 0, effectIndex: 0, isRendering: false, rerenderCount: 0, lastRenderTimestamp: 0 });
 	}
 	else {
-		console.log("Using old component!")
 		component = comp[0];
 	}
 
-	console.log(component);
 	CURRENT_COMPONENT = component;
 
 	window.history.pushState({}, "", to);
@@ -122,7 +118,6 @@ function createElement(tag, props = {}, ...children) {
 const Fragment = (props) => props.children;
 
 export function rerender() {
-	console.log("Rendering!");
 	const state = STATE_MAP.get(CURRENT_COMPONENT);
 	const now = performance.now();
 
@@ -166,7 +161,6 @@ export function createApp(AppComponent) {
 			return;
 		}
 
-		console.log("Mounting!")
 		const state = STATE_MAP.get(component);
 
 		state.stateIndex = 0;
@@ -186,14 +180,10 @@ export function createApp(AppComponent) {
 }
 
 export function useState(initialValue) {
-	const comp = CURRENT_COMPONENT;
-
-	if (!comp)
+	if (!CURRENT_COMPONENT)
 		errorMessage("useState must be called inside a component");
 
-	const data = STATE_MAP.get(comp);
-	console.log(comp);
-	console.log(data);
+	const data = STATE_MAP.get(CURRENT_COMPONENT);
 	const idx = data.stateIndex ?? 0;
 
 	if (!data.states)
@@ -207,6 +197,11 @@ export function useState(initialValue) {
 		if (data.isRendering)
 			errorMessage("Can't setState during render. Move call to useEffect, event handler or async callback.");
 
+		if (typeof newValue === "function")
+
+		if (Object.is(data.states[idx], newValue))
+			return;
+
 		value = newValue;
 		data.states[idx] = newValue;
 		rerender();
@@ -218,12 +213,10 @@ export function useState(initialValue) {
 }
 
 export function useEffect(callback, deps) {
-	const comp = CURRENT_COMPONENT;
-
-	if (!comp)
+	if (!CURRENT_COMPONENT)
 		errorMessage("useEffect must be called inside a component");
 
-	const data = STATE_MAP.get(comp);
+	const data = STATE_MAP.get(CURRENT_COMPONENT);
 	const idx = data.effectIndex ?? 0;
 
 	if (!data.effects)
@@ -232,7 +225,7 @@ export function useEffect(callback, deps) {
 	const prev = data.effects[idx];
 
 	let changed = true;
-
+	
 	if (prev) {
 		if (!deps)
 			changed = true;
@@ -242,7 +235,15 @@ export function useEffect(callback, deps) {
 
 	data.effects[idx] = {
 		callback,
-		deps: deps ?? null,
+		deps: deps ? deps.map(d => {
+			if (Array.isArray(d))
+				return [ ...d ];
+			else if (d && typeof d === "object")
+				return { ...d };
+			else
+				return d;
+		  })
+		: null,
 		cleanup: prev?.cleanup,
 		run: !prev || changed,
 	}
